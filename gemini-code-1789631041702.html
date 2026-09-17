@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web AR - Medan Listrik & Potensial 3D & LKPD</title>
+    <!-- A-Frame Library -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+        /* Layout Utama: Kiri LKPD, Kanan WebAR */
+        .container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+        }
+        /* Sisi Kiri: LKPD & Kontrol */
+        .lkpd-panel {
+            width: 40%;
+            background: #ffffff;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+        .lkpd-header {
+            background: #1e3c72;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .lkpd-header h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .lkpd-header p { font-size: 0.85rem; opacity: 0.8; }
+        
+        .lkpd-content {
+            padding: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .section-title {
+            font-size: 1.05rem;
+            color: #1e3c72;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #1e3c72;
+            padding-bottom: 5px;
+        }
+        .question-box {
+            background: #f9fbfd;
+            border: 1px solid #e1e8ed;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .question-box label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+        textarea { resize: vertical; height: 60px; }
+        
+        .info-atom {
+            background: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 10px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* Sisi Kanan: Tampilan Web AR */
+        .ar-panel {
+            width: 60%;
+            position: relative;
+            background: #0b0f19;
+        }
+        .ar-overlay-hint {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            z-index: 5;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        /* Responsif untuk HP */
+        @media (max-width: 768px) {
+            .container { flex-direction: column-reverse; }
+            .lkpd-panel { width: 100%; height: 50vh; }
+            .ar-panel { width: 100%; height: 50vh; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- SISI KIRI: LKPD Interaktif -->
+        <div class="lkpd-panel">
+            <div class="lkpd-header">
+                <h1>LKPD Interaktif Fisika</h1>
+                <p>Topik: Medan Listrik & Potensial 3D (Muatan Titik & Dipol)</p>
+            </div>
+            <div class="lkpd-content">
+                <div class="section-title">Eksplorasi Medan Listrik</div>
+                
+                <div class="question-box">
+                    <label for="configSelect">1. Pilih Konfigurasi Muatan:</label>
+                    <select id="configSelect" onchange="ubahKonfigurasi()">
+                        <option value="positif">Muatan Tunggal Positif (+q)</option>
+                        <option value="negatif">Muatan Tunggal Negatif (-q)</option>
+                        <option value="dipol" selected>Dipol Listrik (+q dan -q)</option>
+                    </select>
+                    <div id="configInfo" class="info-atom">
+                        <strong>Dipol Listrik:</strong> Terdiri dari muatan positif (merah) dan negatif (biru). Garis gaya listrik keluar dari muatan positif dan masuk menuju muatan negatif.
+                    </div>
+                </div>
+
+                <div class="question-box">
+                    <label>2. Pertanyaan Pengamatan:</label>
+                    <p style="font-size: 0.85rem; color: #555; margin-bottom: 8px;">
+                        Bagaimanakah arah garis gaya listrik pada muatan tunggal positif dibandingkan dengan muatan dipol di layar sebelah kanan?
+                    </p>
+                    <textarea placeholder="Tuliskan hasil pengamatan Anda di sini..."></textarea>
+                </div>
+
+                <div class="question-box">
+                    <label>3. Kesimpulan:</label>
+                    <textarea placeholder="Kesimpulan mengenai sifat garis gaya medan listrik..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- SISI KANAN: Web AR / 3D Canvas -->
+        <div class="ar-panel">
+            <div class="ar-overlay-hint">Visualisasi 3D Medan Listrik (Geser untuk memutar sudut pandang)</div>
+            
+            <!-- A-Frame Scene -->
+            <a-scene embedded vr-mode-ui="enabled: false">
+                <a-camera position="0 0 3.5" look-controls="enabled: true"></a-camera>
+                
+                <a-light type="ambient" color="#FFF" intensity="0.9"></a-light>
+                <a-light type="directional" position="2 4 2" intensity="0.7"></a-light>
+
+                <!-- Scene Container -->
+                <a-entity id="electricFieldScene" position="0 0 0">
+                    
+                    <!-- Muatan 1 (Positif / Merah) -->
+                    <a-entity id="charge1" position="-0.8 0 0">
+                        <a-sphere radius="0.25" color="#ff3333" roughness="0.3"></a-sphere>
+                        <a-text value="+" align="center" position="0 0 0.3" color="#ffffff" scale="1.5 1.5 1.5"></a-text>
+                    </a-entity>
+
+                    <!-- Muatan 2 (Negatif / Biru - untuk Dipol) -->
+                    <a-entity id="charge2" position="0.8 0 0" visible="true">
+                        <a-sphere radius="0.25" color="#3385ff" roughness="0.3"></a-sphere>
+                        <a-text value="-" align="center" position="0 0 0.3" color="#ffffff" scale="1.5 1.5 1.5"></a-text>
+                    </a-entity>
+
+                    <!-- Representasi Garis Gaya Listrik / Partikel Medan (Simulasi Silinder/Cincin Penghubung) -->
+                    <a-entity id="fieldLines">
+                        <!-- Garis lurus tengah -->
+                        <a-cylinder position="0 0 0" rotation="0 0 90" radius="0.02" height="1.1" color="#ffeb3b" opacity="0.7"></a-cylinder>
+                        <!-- Lengkungan atas -->
+                        <a-torus position="0 0 0" radius="0.8" radius-tubular="0.015" rotation="0 0 0" color="#ffeb3b" opacity="0.5"></a-torus>
+                        <!-- Lengkungan bawah -->
+                        <a-torus position="0 0 0" radius="1.2" radius-tubular="0.015" rotation="0 0 0" color="#ffeb3b" opacity="0.3"></a-torus>
+                    </a-entity>
+
+                </a-entity>
+            </a-scene>
+        </div>
+    </div>
+
+    <script>
+        function ubahKonfigurasi() {
+            const select = document.getElementById('configSelect');
+            const infoBox = document.getElementById('configInfo');
+            const charge1 = document.getElementById('charge1');
+            const charge2 = document.getElementById('charge2');
+            const fieldLines = document.getElementById('fieldLines');
+            const val = select.value;
+
+            if (val === 'positif') {
+                infoBox.innerHTML = "<strong>Muatan Positif (+q):</strong> Garis-garis medan listrik digambarkan menyebar atau keluar menjauhi pusat muatan ke segala arah.";
+                charge1.setAttribute('position', '0 0 0');
+                charge2.setAttribute('visible', 'false');
+                // Ubah garis menjadi pancaran keluar
+                fieldLines.innerHTML = `
+                    <a-cylinder position="0.5 0 0" rotation="0 0 90" radius="0.02" height="0.8" color="#ff3333" opacity="0.7"></a-cylinder>
+                    <a-cylinder position="-0.5 0 0" rotation="0 0 90" radius="0.02" height="0.8" color="#ff3333" opacity="0.7"></a-cylinder>
+                    <a-cylinder position="0 0.5 0" rotation="90 0 0" radius="0.02" height="0.8" color="#ff3333" opacity="0.7"></a-cylinder>
+                    <a-cylinder position="0 -0.5 0" rotation="90 0 0" radius="0.02" height="0.8" color="#ff3333" opacity="0.7"></a-cylinder>
+                `;
+            } else if (val === 'negatif') {
+                infoBox.innerHTML = "<strong>Muatan Negatif (-q):</strong> Garis-garis medan listrik digambarkan mengarah masuk (menuju) ke pusat muatan.";
+                charge1.setAttribute('position', '0 0 0');
+                charge2.setAttribute('visible', 'false');
+                fieldLines.innerHTML = `
+                    <a-cylinder position="0.5 0 0" rotation="0 0 90" radius="0.02" height="0.8" color="#3385ff" opacity="0.7"></a-cylinder>
+                    <a-cylinder position="-0.5 0 0" rotation="0 0 90" radius="0.02" height="0.8" color="#3385ff" opacity="0.7"></a-cylinder>
+                    <a-cylinder position="0 0.5 0" rotation="90 0 0" radius="0.02" height="0.8" color="#3385ff" opacity="0.7"></a-cylinder>
+                    <a-cylinder position="0 -0.5 0" rotation="90 0 0" radius="0.02" height="0.8" color="#3385ff" opacity="0.7"></a-cylinder>
+                `;
+            } else if (val === 'dipol') {
+                infoBox.innerHTML = "<strong>Dipol Listrik:</strong> Terdiri dari muatan positif (merah) dan negatif (biru). Garis gaya listrik keluar dari muatan positif dan masuk menuju muatan negatif.";
+                charge1.setAttribute('position', '-0.8 0 0');
+                charge2.setAttribute('visible', 'true');
+                fieldLines.innerHTML = `
+                    <a-cylinder position="0 0 0" rotation="0 0 90" radius="0.02" height="1.1" color="#ffeb3b" opacity="0.7"></a-cylinder>
+                    <a-torus position="0 0 0" radius="0.8" radius-tubular="0.015" rotation="0 0 0" color="#ffeb3b" opacity="0.5"></a-torus>
+                    <a-torus position="0 0 0" radius="1.2" radius-tubular="0.015" rotation="0 0 0" color="#ffeb3b" opacity="0.3"></a-torus>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
